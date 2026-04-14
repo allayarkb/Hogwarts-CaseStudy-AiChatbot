@@ -1,0 +1,19 @@
+# Never share these files!
+
+# The file with secret passwords
+.env
+
+# Folder with all the helper packages (too big to share, people can reinstall)
+node_modules/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE files (editor settings)
+.vscode/
+.idea/
+
+# Log files
+*.log
+npm-debug.log*
