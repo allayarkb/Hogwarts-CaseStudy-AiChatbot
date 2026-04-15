@@ -1,68 +1,74 @@
-
+/**
+ * Global reset (common pattern):
+ * - margin/padding 0 removes browser-default spacing so layout is predictable.
+ * - box-sizing: border-box makes width include padding and border, so percentage widths match intuition.
+ */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-
-
+/**
+ * Page shell: min-height 100vh makes the footer (#prompt) stick to the bottom when content is short
+ * (combined with margin-top: auto on #prompt in a column flex layout).
+ */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: Arial, sans-serif;
     line-height: 1.6;
     color: #333;
     background-color: #f4f4f4;
-    
-    /* Flexbox layout to stack elements vertically */
     display: flex;
     flex-direction: column;
-    
-    /* Ensures body takes up full viewport height */
     min-height: 100vh;
 }
 
-/* ===== TITLE SECTION ===== */
-/* Main heading container - positioned at top */
+/* Title block at top */
 #title {
-    text-align: center;  /* Centers the heading horizontally */
-    padding-top: 40px;   /* Adds space from the top */
+    text-align: center;
+    padding-top: 40px;
 }
 
-/* Styles for the heading text */
 #title h1 {
-    font-size: 48px;        /* Large, prominent heading size */
-    font-weight: 900;       /* Extra bold text */
-    color: #000000;         /* Black color */
+    font-size: 48px;
+    font-weight: 900;
+    color: #000000;
 }
 
-/* ===== FOOTER/PROMPT SECTION ===== */
-/* Footer area container at the bottom of the page */
+/**
+ * #prompt: input + button row.
+ * margin-top: auto consumes free space in the flex column, pushing this bar to the viewport bottom.
+ */
 #prompt {
-    display: flex;              /* Horizontal layout for input and button */
-    justify-content: center;    /* Centers items horizontally */
-    align-items: center;        /* Centers items vertically */
-    gap: 10px;                  /* Spacing between input and button */
-    
-    /* Footer styling */
-    margin-top: auto;           /* Pushes this section to bottom */
-    padding: 30px;              /* Internal padding for the footer */
-    background-color: #ffffff;  /* White background for footer area */
-    border-top: 2px solid #ddd; /* Light border to separate from content */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-top: 2px solid #ddd;
 }
 
 #prompt input {
-    width: 300px;              /* Fixed width for the input field */
-    padding: 10px;             /* Padding inside the input */
-    font-size: 16px;           /* Readable font size */
-    border: 1px solid #ccc;    /* Light border around input */
-    border-radius: 4px;        /* Rounded corners for input */
+    width: 300px;
+    max-width: 70vw;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
+
 #prompt button {
-    padding: 10px 20px;        /* Padding for the button */
-    font-size: 16px;           /* Readable font size */
-    color: #fff;              /* White text color */
-    background-color: #000000; 
-    border: none;             /* No border */
-    border-radius: 4px;       /* Rounded corners for button */
-    cursor: pointer;          /* Pointer cursor on hover */
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #000000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#prompt button:hover {
+    opacity: 0.85;
 }

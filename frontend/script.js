@@ -1,182 +1,179 @@
-// ===== THE WEBSITE BRAIN (FRONTEND SCRIPT) =====
-// This runs on the user's computer and handles what they see and click
+/**
+ * Frontend script for the AI chat page
+ *
+ * Runs entirely in the visitor’s browser. It:
+ * - Reads the user’s text from the input field
+ * - Sends it to the backend via HTTP (fetch) as JSON
+ * - Renders the assistant reply in the page
+ *
+ * Why fetch + JSON?
+ * The backend is designed as a small REST-style API: POST /chat with body { message: "..." }
+ * and response { response: "..." }. fetch is the standard browser API for HTTP; JSON is a
+ * common wire format both sides can parse.
+ *
+ * Same-origin API URL:
+ * This app is meant to be opened from the same server that serves the API (e.g. http://localhost:5000/
+ * in dev, or your Railway URL in production). Using window.location.origin + '/chat' means the browser
+ * always talks to the host that served the HTML—no hard-coded localhost in production builds.
+ * Do not open main.html as file:// ; use the Express server so origin matches.
+ */
+(function () {
+  'use strict';
 
-// ===== STEP 1: GRAB THE BUTTONS AND TEXT BOXES =====
-// These are like grabbing the toys from the shelf
+  const inputField = document.getElementById('Input');
+  const submitButton = document.getElementById('submit');
+  /** #prompt is reused as an anchor point to insert the scrollable chat area above the input row */
+  const promptSection = document.getElementById('prompt');
 
-// Find the input box where user types their message
-const inputField = document.getElementById('Input');
-
-// Find the send button (the arrow ➡️)
-const submitButton = document.getElementById('submit');
-
-// Find the title div (we'll use this area to show the chat)
-const chatArea = document.getElementById('prompt');
-
-// ===== STEP 2: THE MAGIC ADDRESS (WHERE TO SEND MESSAGES) =====
-// This is the address of our brain (backend)
-// http://localhost:5000 = the computer's own address
-// /chat = the mailbox on that computer
-const API_URL = 'http://localhost:5000/chat';
-
-// ===== STEP 3: WHEN THE USER CLICKS THE BUTTON, SOMETHING HAPPENS =====
-// This is like: "When I press the button, do this:"
-submitButton.addEventListener('click', sendMessage);
-
-// ALSO: Let them press ENTER key to send (easier than clicking)
-inputField.addEventListener('keypress', (event) => {
-  // Only send if they pressed the ENTER key
-  if (event.key === 'Enter') {
-    sendMessage();
-  }
-});
-
-// ===== STEP 4: THE SENDING FUNCTION (THE MAIN MAGIC) =====
-// This is the actual work that happens when we send a message
-async function sendMessage() {
-  // Get what the user typed
-  const userMessage = inputField.value.trim();
-
-  // SAFETY: Make sure they actually typed something
-  if (!userMessage) {
-    alert('Please write something! 😊');
+  if (!inputField || !submitButton || !promptSection) {
+    console.error('Required DOM elements missing. Expected #Input, #submit, #prompt.');
     return;
   }
 
-  // Show the user's message on the screen
-  displayMessage(userMessage, 'user');
+  /** Full URL for the chat endpoint on the current host (e.g. https://myapp.up.railway.app/chat) */
+  const CHAT_URL = `${window.location.origin}/chat`;
 
-  // Clear the input box (empty it)
-  inputField.value = '';
+  submitButton.addEventListener('click', sendMessage);
+  inputField.addEventListener('keypress', function onKeypress(event) {
+    if (event.key === 'Enter') {
+      sendMessage();
+    }
+  });
 
-  // Show "loading" message while waiting for the AI
-  const loadingId = displayMessage('🤖 Thinking...', 'ai');
-
-  try {
-    // ===== STEP 5: SEND THE MESSAGE TO THE BACKEND =====
-    // This is like sending a letter to the post office
-    const response = await fetch(API_URL, {
-      method: 'POST',           // We're SENDING data (not asking for it)
-      headers: {
-        'Content-Type': 'application/json' // We're sending text in JSON format
-      },
-      body: JSON.stringify({
-        message: userMessage    // Put the user's message in the envelope
-      })
-    });
-
-    // ===== STEP 6: CHECK IF THE MESSAGE WAS RECEIVED OKAY =====
-    // Was the post office happy? Or did something go wrong?
-    if (!response.ok) {
-      throw new Error('The server said no! Check if the backend is running.');
+  /**
+   * sendMessage — read input, POST to backend, update UI.
+   * async function allows await fetch(...) without blocking the browser’s main thread; the UI stays responsive.
+   */
+  async function sendMessage() {
+    const userMessage = inputField.value.trim();
+    if (!userMessage) {
+      window.alert('Please enter a message.');
+      return;
     }
 
-    // ===== STEP 7: UNWRAP THE ANSWER (GET THE AI'S RESPONSE) =====
-    // Open the letter from the post office and read it
-    const data = await response.json();
+    displayMessage(userMessage, 'user');
+    inputField.value = '';
 
-    // Get the AI's actual answer text
-    const aiMessage = data.response;
+    const loadingId = displayMessage('Thinking…', 'ai');
 
-    // ===== STEP 8: SHOW THE AI'S ANSWER ON THE SCREEN =====
-    // Replace the "Thinking..." with the actual answer
-    updateMessage(loadingId, aiMessage);
+    try {
+      /**
+       * fetch options:
+       * - method POST: create-side semantics for sending a body (here, the user message).
+       * - headers Content-Type tells the server to interpret the body as JSON.
+       * - body: JSON.stringify serializes a JS object to a string; must match Content-Type.
+       */
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage }),
+      });
 
-  } catch (error) {
-    // ===== STEP 9: SOMETHING WENT WRONG (ERROR HANDLING) =====
-    // If the post office delivers bad mail, show the error
-    console.error('Error:', error);
+      /**
+       * response.ok is true for HTTP 200–299. For 4xx/5xx we still get a resolved Promise from fetch;
+       * we must check ok and optionally read error JSON from the body for better UX.
+       */
+      const rawText = await response.text();
+      let data;
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = {};
+      }
 
-    updateMessage(
-      loadingId,
-      '❌ Oops! Something went wrong. Is the backend running? (Try running `npm start` in the backend folder)'
-    );
-  }
-}
+      if (!response.ok) {
+        const errMsg = data.error || `Request failed (${response.status})`;
+        throw new Error(errMsg);
+      }
 
-// ===== STEP 10: SHOW MESSAGE ON SCREEN FUNCTION =====
-// This function adds a message to the chat display
-function displayMessage(text, sender) {
-  // Create a new message bubble
-  const messageDiv = document.createElement('div');
+      if (typeof data.response !== 'string') {
+        throw new Error('Invalid response from server: missing response string.');
+      }
 
-  // Give it a unique ID so we can update it later
-  const messageId = 'msg-' + Date.now();
-  messageDiv.id = messageId;
-
-  // Make it look nice with CSS
-  messageDiv.style.cssText = `
-    margin: 10px 0;
-    padding: 12px 15px;
-    border-radius: 8px;
-    max-width: 70%;
-    word-wrap: break-word;
-    background-color: ${sender === 'user' ? '#007bff' : '#e9ecef'};
-    color: ${sender === 'user' ? '#fff' : '#333'};
-    align-self: ${sender === 'user' ? 'flex-end' : 'flex-start'};
-  `;
-
-  // ===== CONVERT ASTERISKS TO BULLET POINTS =====
-  // This makes the message look nicer with proper formatting
-  if (sender === 'ai') {
-    // Replace ** with bold text formatting
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Replace lines starting with * with proper bullets
-    text = text.replace(/\* /g, '• ');
-    // Replace numbered lists (1. 2. 3. etc) with proper formatting
-    text = text.replace(/(\d+)\. /g, '<br/>$1. ');
+      updateMessage(loadingId, data.response);
+    } catch (error) {
+      console.error('sendMessage:', error);
+      updateMessage(
+        loadingId,
+        `Error: ${error.message}. If running locally, start the backend from the backend folder (npm start) and open this page via that server (not file://).`
+      );
+    }
   }
 
-  // Add the text to the message bubble (using innerHTML to support bold formatting)
-  messageDiv.innerHTML = text;
+  /**
+   * displayMessage — creates a div, applies inline styles (could be moved to CSS classes),
+   * inserts into a scrollable #chat-container. Returns an id so updateMessage can replace "Thinking…".
+   *
+   * Security note: for AI text we use innerHTML with light markdown-like transforms. Model output can
+   * contain HTML-like strings; in a production app you might sanitize (e.g. DOMPurify). Here we only
+   * substitute **bold** and bullets for readability.
+   */
+  function displayMessage(text, sender) {
+    const messageDiv = document.createElement('div');
+    const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    messageDiv.id = messageId;
+    messageDiv.style.cssText = [
+      'margin:10px 0',
+      'padding:12px 15px',
+      'border-radius:8px',
+      'max-width:70%',
+      'word-wrap:break-word',
+      'background-color:' + (sender === 'user' ? '#007bff' : '#e9ecef'),
+      'color:' + (sender === 'user' ? '#fff' : '#333'),
+      'align-self:' + (sender === 'user' ? 'flex-end' : 'flex-start'),
+    ].join(';');
 
-  // Create a chat container if it doesn't exist yet
-  let chatContainer = document.getElementById('chat-container');
-  if (!chatContainer) {
-    chatContainer = document.createElement('div');
-    chatContainer.id = 'chat-container';
-    chatContainer.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
-      padding: 20px;
-      background-color: #f9f9f9;
-      border-radius: 8px;
-      min-height: 200px;
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
-    `;
+    if (sender === 'ai') {
+      text = formatAiHtml(text);
+    }
+    messageDiv.innerHTML = sender === 'ai' ? text : escapeHtml(text);
 
-    // Add the chat container BEFORE the prompt box
-    chatArea.parentNode.insertBefore(chatContainer, chatArea);
+    let chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) {
+      chatContainer = document.createElement('div');
+      chatContainer.id = 'chat-container';
+      chatContainer.style.cssText = [
+        'display:flex',
+        'flex-direction:column',
+        'gap:10px',
+        'margin-bottom:20px',
+        'padding:20px',
+        'background-color:#f9f9f9',
+        'border-radius:8px',
+        'min-height:200px',
+        'max-height:400px',
+        'overflow-y:auto',
+        'border:1px solid #ddd',
+      ].join(';');
+      promptSection.parentNode.insertBefore(chatContainer, promptSection);
+    }
+
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return messageId;
   }
 
-  // Add the message bubble to the chat
-  chatContainer.appendChild(messageDiv);
-
-  // Scroll to the newest message
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-
-  // Return the message ID so we can update it later
-  return messageId;
-}
-
-// ===== STEP 11: UPDATE MESSAGE FUNCTION =====
-// This changes a message (like fixing a typo)
-function updateMessage(messageId, newText) {
-  const messageElement = document.getElementById(messageId);
-  if (messageElement) {
-    // ===== CONVERT FORMATTING =====
-    // Replace ** with bold text formatting
-    newText = newText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Replace lines starting with * with proper bullets
-    newText = newText.replace(/\* /g, '• ');
-    // Replace numbered lists (1. 2. 3. etc) with proper formatting
-    newText = newText.replace(/(\d+)\. /g, '<br/>$1. ');
-    
-    // Update with HTML support
-    messageElement.innerHTML = newText;
+  function updateMessage(messageId, newText) {
+    const el = document.getElementById(messageId);
+    if (!el) return;
+    el.innerHTML = formatAiHtml(newText);
   }
-}
+
+  /** Minimal HTML escape for user-authored text (displayed as text nodes via textContent would be safer; we use escape + text for user path above). */
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /** Apply the same visual tweaks we used before: **bold**, bullet lines, numbered lists. */
+  function formatAiHtml(text) {
+    let t = String(text);
+    t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/\* /g, '• ');
+    t = t.replace(/(\d+)\. /g, '<br/>$1. ');
+    return t;
+  }
+})();

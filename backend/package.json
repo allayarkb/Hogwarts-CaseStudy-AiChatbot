@@ -1,7 +1,8 @@
 {
+  "_readme": "npm reads this file to know the package name, entry script, and dependencies. 'dependencies' are libraries installed into node_modules/ when you run npm install. 'scripts' are shortcuts: npm start runs 'node index.js'. Do not put secrets here—use environment variables (GROQ_API_KEY).",
   "name": "ai-chat-backend",
   "version": "1.0.0",
-  "description": "Backend for AI Chat Assistant",
+  "description": "Express server: serves ../frontend static files and POST /chat proxy to Groq OpenAI-compatible API. Requires GROQ_API_KEY in the environment.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

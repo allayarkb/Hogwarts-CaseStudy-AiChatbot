@@ -1,20 +1,36 @@
 <!DOCTYPE html>
+<!--
+  Single-page UI for the case study.
+
+  Why a plain HTML file (no React/Vue)?
+  The assignment asks for a minimal page: input, submit, show AI reply. Static HTML + CSS + JS is enough.
+
+  How this connects to the backend:
+  - script.js uses fetch() to POST to the same origin as this page: /chat
+  - Therefore you should open this site through the Express server (e.g. http://localhost:5000/),
+    not by double-clicking the file (file:// would send requests to a non-existent /chat on file origin).
+
+  Asset paths:
+  - style.css and script.js are relative to this file. Express serves the whole frontend/ directory,
+    so /style.css and /script.js resolve correctly when the HTML is at / or /main.html.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- viewport: mobile browsers use this for initial scale and width -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI</title>
+    <title>AI Chat</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="title">
-        <h1>🤖 AI Chat</h1>
+        <h1>AI Chat</h1>
     </div>
+    <!-- Input row: script.js expects id="Input", id="submit", and id="prompt" -->
     <div id="prompt">
-        <input type="text" name="Enter your prompt" id="Input" placeholder="Enter your prompt">
-        <button id="submit">➡️</button>
+        <input type="text" name="message" id="Input" placeholder="Enter your message" autocomplete="off">
+        <button type="button" id="submit" aria-label="Send message">Send</button>
     </div>
     <script src="script.js"></script>
-    
 </body>
 </html>
