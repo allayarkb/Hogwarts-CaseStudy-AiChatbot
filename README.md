@@ -42,6 +42,10 @@ Anyone with the link can use the site in a browser. The API key stays on the ser
 | “Secret key is missing” | Set `GROQ_API_KEY` in Railway Variables or `backend/.env` locally. |
 | CORS / wrong host | Open the app via the **same origin** as the API (e.g. `http://localhost:5000` or your Railway URL), not `file://`. |
 
+## Git branch note
+
+If GitHub still has a **`main`** branch you do not use: set the repo **default branch** to **`master`** first (**Settings → General → Default branch**), then delete `main` (e.g. `git push origin --delete main`). GitHub blocks deleting the branch that is currently default.
+
 ## Submission
 
 Case study also asks for **project documentation (PDF)** covering what you built, stack, how the LLM API works, how frontend talks to backend, key handling, prompts used, problems/solutions, and what you learned — in **your own words** (see `Private AI systems.pdf`).
