@@ -1,0 +1,9 @@
+{
+  "name": "hogwarts-case-study-root",
+  "private": true,
+  "_readme": "Root package file added for Railway auto-detection. postinstall installs backend dependencies. start runs backend server from repo root.",
+  "scripts": {
+    "postinstall": "npm --prefix backend install",
+    "start": "npm --prefix backend start"
+  }
+}
