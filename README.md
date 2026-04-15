@@ -26,13 +26,15 @@ Anyone with the link can use the site in a browser. The API key stays on the ser
 | `frontend/` | HTML/CSS/JS shown in the browser |
 | `backend/` | Express app: static files + `POST /chat` → Groq |
 
-## Deploy on Railway (summary)
+## Deploy on Railway (beginner steps)
 
-1. Push this repo to GitHub (branch **`master`**).
-2. [Railway](https://railway.app/) → New Project → Deploy from GitHub → pick this repo.
-3. Service **Root Directory:** `backend` (important: repo has `frontend` next to it).
-4. **Variables:** add `GROQ_API_KEY` (same value as local `.env`; never commit `.env`).
-5. Deploy → copy the public URL → paste it at the top of this README.
+1. Sign in at [railway.app](https://railway.app/) and connect your GitHub account when asked.
+2. **New Project** → **Deploy from GitHub repo** → choose **Hogwarts-CaseStudy-AiChatbot** (or your fork).
+3. Open the new service → **Settings** → set **Root Directory** to **`backend`** (so Railway runs `npm start` next to the `frontend` folder in the repo).
+4. **Variables** (or **Variables** tab): add **`GROQ_API_KEY`** with your Groq key (same as in local `.env`).
+5. Wait for the deploy to finish → **Settings → Networking → Generate Domain** (or the public URL Railway shows).
+6. Open that URL in a browser; you should see the chat page. Send a test message.
+7. Edit this README and replace ``https://YOUR-PROJECT.up.railway.app`` with your real link, then commit and push (optional but nice for reviewers).
 
 ## Troubleshooting
 
